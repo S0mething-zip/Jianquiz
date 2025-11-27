@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <title>企業資訊系統導論 - 練習題庫 (外部題庫版)</title>
+  <style>
+    body { font-family: "Microsoft JhengHei", Arial, sans-serif; margin: 20px; line-height: 1.6; }
+    h1 { color: #333; }
+    
+    /* 題目區塊樣式 */
+    .question { 
+        margin-bottom: 20px; 
+        padding: 15px; 
+        border: 1px solid #ddd; 
+        border-radius: 8px;
+        background-color: #f9f9f9;
+        transition: all 0.3s;
+    }
+
+    /* 選項樣式 */
+    .options label { display: block; margin: 5px 0; cursor: pointer; }
+    
+    /* 按鈕樣式 */
+    button { 
+        padding: 10px 20px; 
+        font-size: 16px; 
+        cursor: pointer; 
+        background-color: #007bff; 
+        color: white; 
+        border: none; 
+        border-radius: 5px; 
+        margin-top: 10px;
+    }
+    button:hover { background-color: #0056b3; }
+
+    /* --- 錯誤標記樣式 --- */
+    .question.incorrect { 
+        border-left: 5px solid #ff4d4d;
+        background-color: #fff0f0;
+    }
+    
+    .question.correct {
+        border-left: 5px solid #28a745;
+        background-color: #f0fff4;
+    }
+
+    /* 詳解文字區塊 */
+    .explanation { 
+        display: none; 
+        margin-top: 10px; 
+        padding-top: 10px;
+        border-top: 1px dashed #ccc;
+        font-size: 0.95em;
+    }
+
+    /* 狀態文字顏色 */
+    .status-wrong { color: #d9534f; font-weight: bold; }
+    .status-correct { color: #28a745; font-weight: bold; }
+    
+    .hidden { display: none; }
+    #result { margin-top: 20px; font-size: 1.2em; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <h1>企業資訊系統導論 - 練習題庫 (外部題庫版)</h1>
+  
+  <div style="margin-bottom: 20px;">
+      <label for="chapter">選擇章節：</label>
+      <select id="chapter" style="padding: 5px;">
+        <option value="01">第01章：資訊管理的基本概念與架構</option>
+        <option value="03">第03章：資訊管理的科技面觀點</option>
+        <option value="06">第06章：資訊管理的應用系統觀點</option>
+      </select>
+      <button onclick="startQuiz()">開始測驗 / 重置</button>
+  </div>
+
+  <div id="quiz"></div>
+  <div id="result" class="hidden"></div>
+
+  <script src="questions_data.js"></script> 
+
+<script>
+// 注意：questions 變數已經從 questions_data.js 載入
+let currentQuestions = [];
+let score = 0;
+
+function startQuiz() {
+  const chapter = document.getElementById("chapter").value;
+  // 增加錯誤檢查，如果 questions 變數沒有被載入，就會發出警告
+  if (typeof questions === 'undefined' || !questions[chapter]) {
+      alert("載入題庫失敗！請檢查檔案名稱是否為 'questions_data.js' 且與 HTML 檔在同一資料夾。");
+      return;
+  }
+  
+  currentQuestions = questions[chapter];
+  score = 0;
+  
+  const quizDiv = document.getElementById("quiz");
+  const resultDiv = document.getElementById("result");
+  
+  quizDiv.innerHTML = "";
+  resultDiv.className = "hidden";
+  
+  currentQuestions.forEach((q, i) => {
+    const div = document.createElement("div");
+    div.className = "question";
+    div.id = "q-block-" + i;
+    
+    div.innerHTML = `<p><strong>${i+1}. ${q.q}</strong></p>`;
+    
+    const optionsDiv = document.createElement("div");
+    optionsDiv.className = "options";
+    q.options.forEach((opt, j) => {
+      optionsDiv.innerHTML += `<label><input type="radio" name="q${i}" value="${j}"> ${opt}</label>`;
+    });
+    div.appendChild(optionsDiv);
+    
+    const exp = document.createElement("div");
+    exp.className = "explanation";
+    exp.id = `exp${i}`;
+    div.appendChild(exp); 
+    
+    quizDiv.appendChild(div);
+  });
+  
+  quizDiv.innerHTML += `<button onclick="submitQuiz()">提交答案</button>`;
+}
+
+function submitQuiz() {
+  score = 0;
+  
+  currentQuestions.forEach((q, i) => {
+    const radios = document.getElementsByName("q"+i);
+    const questionBlock = document.getElementById("q-block-" + i);
+    const explanationDiv = document.getElementById("exp"+i);
+    
+    let selected = -1;
+    for (let r of radios) {
+      if (r.checked) {
+        selected = parseInt(r.value);
+      }
+    }
+    
+    questionBlock.classList.remove("incorrect", "correct");
+
+    if (selected === q.answer) {
+      score++;
+      questionBlock.classList.add("correct");
+      explanationDiv.innerHTML = `
+        <span class="status-correct">✅ 答對了！</span><br>
+        <span style="color:#555">詳解：${q.explanation}</span>
+      `;
+    } else {
+      questionBlock.classList.add("incorrect");
+      
+      let statusText = selected === -1 ? "⚠️ 未作答" : "❌ 答錯了";
+      let correctAnswerText = q.options[q.answer];
+      
+      explanationDiv.innerHTML = `
+        <span class="status-wrong">${statusText}！</span> <br>
+        正確答案是：<strong>${correctAnswerText}</strong><br>
+        <span style="color:#555">詳解：${q.explanation}</span>
+      `;
+    }
+    
+    explanationDiv.style.display = "block";
+  });
+
+  const resultDiv = document.getElementById("result");
+  resultDiv.className = "";
+  
+  let color = score === currentQuestions.length ? "green" : (score < currentQuestions.length / 2 ? "red" : "black");
+  
+  resultDiv.innerHTML = `<h2 style="color:${color}">你的分數：${score} / ${currentQuestions.length}</h2>`;
+  
+  resultDiv.scrollIntoView({behavior: "smooth"});
+}
+
+window.onload = startQuiz;
+</script>
+</body>
+</html>
